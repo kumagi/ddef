@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"time"
 	"strconv"
-	"math"
 	"math/rand"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -20,16 +19,48 @@ const (
 	frameWidth  = 32
 	frameHeight = 32
 	frameNum    = 8
+	scale = 64
 	points = 1024
 )
 
+type Star struct {
+	fromx, fromy, tox, toy int
+}
+
+func (s *Star) Init() {
+	s.tox = rand.Intn(screenWidth * scale)
+	s.fromx = s.tox
+	s.toy = rand.Intn(screenHeight * scale)
+	s.fromy = s.toy
+}
+
+func (s *Star) Out() bool {
+	return s.tox < 0 || screenWidth * scale < s.tox || s.toy < 0 || screenHeight * scale < s.toy
+}
+
+func (s *Star) Update(x, y float64) {
+	s.fromx = s.tox
+	s.fromy = s.toy
+	s.tox += int((float64(s.tox) - x * scale) / 32)
+	s.toy += int((float64(s.toy) - y * scale) / 32)
+	if s.Out() {
+		s.Init()
+	}
+}
+
+func (s *Star) Pos() (int, int, int, int) {
+	return s.fromx / scale, s.fromy / scale, s.tox / scale, s.toy / scale
+}
+
 type Game struct {
-	count int
-	fromx, fromy, tox, toy [points]int
+	stars [points]Star
 }
 
 func abs(a int) int {
-    return int(math.Abs(float64(a)))
+	if a < 0 {
+		return -a
+	}
+	return a
 }
 
 func DrawLine(img *ebiten.Image, fromx, fromy, tox, toy int, color color.RGBA) {
@@ -77,37 +108,25 @@ func DrawLine(img *ebiten.Image, fromx, fromy, tox, toy int, color color.RGBA) {
 func NewGame() *Game {
 	g := new(Game)
 	for i := 0; i < points; i++ {
-		g.tox[i] = rand.Intn(screenWidth)
-		g.fromx[i] = g.tox[i]
-		g.toy[i] = rand.Intn(screenHeight)
-		g.fromy[i] = g.toy[i]
+		g.stars[i].Init()
 	}
 	return g
 }
 
 func (g *Game) Update() error {
-	g.count++
 	x, y := ebiten.CursorPosition()
 	ebiten.SetWindowTitle(strconv.Itoa(x) + ":" + strconv.Itoa(y))
 	for i := 0; i < points; i++ {
-		g.fromx[i] = g.tox[i]
-		g.fromy[i] = g.toy[i]
-		g.tox[i] += (g.tox[i] - x) / 10
-		g.toy[i] += (g.toy[i] - y) / 10
-		if g.tox[i] < 0 || screenWidth < g.tox[i] || g.toy[i] < 0 || screenHeight < g.toy[i] {
-			g.tox[i] = rand.Intn(screenWidth)
-			g.toy[i] = rand.Intn(screenHeight)
-			g.fromx[i] = g.tox[i]
-			g.fromy[i] = g.toy[i]
-		}
-		
+		g.stars[i].Update(float64(x), float64(y))
 	}
 	return nil
 }
 
 func (g *Game) Draw(img *ebiten.Image) {
 	for i := 0; i < points; i++ {
-		DrawLine(img, g.fromx[i], g.fromy[i], g.tox[i], g.toy[i], color.RGBA{0xbb, 0xdd, 0xff, 0xfe})
+		s := &g.stars[i]
+		fx, fy, tx, ty := s.Pos()
+		DrawLine(img, fx, fy, tx, ty, color.RGBA{0xbb, 0xdd, 0xff, 0xfe})
 	}
 }
 
