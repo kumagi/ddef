@@ -24,7 +24,7 @@ const (
 )
 
 type Star struct {
-	fromx, fromy, tox, toy int
+	fromx, fromy, tox, toy, blightness int
 }
 
 func (s *Star) Init() {
@@ -32,6 +32,7 @@ func (s *Star) Init() {
 	s.fromx = s.tox
 	s.toy = rand.Intn(screenHeight * scale)
 	s.fromy = s.toy
+	s.blightness = rand.Intn(0xff)
 }
 
 func (s *Star) Out() bool {
@@ -43,6 +44,10 @@ func (s *Star) Update(x, y float64) {
 	s.fromy = s.toy
 	s.tox += int((float64(s.tox) - x * scale) / 32)
 	s.toy += int((float64(s.toy) - y * scale) / 32)
+	s.blightness += 1
+	if 0xff < s.blightness {
+		s.blightness = 0xff
+	}
 	if s.Out() {
 		s.Init()
 	}
@@ -126,7 +131,8 @@ func (g *Game) Draw(img *ebiten.Image) {
 	for i := 0; i < points; i++ {
 		s := &g.stars[i]
 		fx, fy, tx, ty := s.Pos()
-		DrawLine(img, fx, fy, tx, ty, color.RGBA{0xbb, 0xdd, 0xff, 0xfe})
+		DrawLine(img, fx, fy, tx, ty, color.RGBA{uint8(0xbb * s.blightness / 0xff),
+			uint8(0xdd * s.blightness / 0xff), uint8(0xff * s.blightness / 0xff), 0xff})
 	}
 }
 
