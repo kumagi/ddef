@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"math/rand"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 )
 
 const (
@@ -24,26 +25,26 @@ const (
 )
 
 type Star struct {
-	fromx, fromy, tox, toy, blightness int
+	fromx, fromy, tox, toy, blightness float64
 }
 
 func (s *Star) Init() {
-	s.tox = rand.Intn(screenWidth * scale)
+	s.tox = rand.Float64() * screenWidth * scale
 	s.fromx = s.tox
-	s.toy = rand.Intn(screenHeight * scale)
+	s.toy = rand.Float64() * screenHeight * scale
 	s.fromy = s.toy
-	s.blightness = rand.Intn(0xff)
+	s.blightness = rand.Float64() * 0xff
 }
 
 func (s *Star) Out() bool {
-	return s.tox < 0 || screenWidth * scale < s.tox || s.toy < 0 || screenHeight * scale < s.toy
+	return s.fromx < 0 || screenWidth * scale < s.fromx || s.fromy < 0 || screenHeight * scale < s.fromy
 }
 
 func (s *Star) Update(x, y float64) {
 	s.fromx = s.tox
 	s.fromy = s.toy
-	s.tox += int((float64(s.tox) - x * scale) / 32)
-	s.toy += int((float64(s.toy) - y * scale) / 32)
+	s.tox += (s.tox - x) / 32
+	s.toy += (s.toy - y) / 32
 	s.blightness += 1
 	if 0xff < s.blightness {
 		s.blightness = 0xff
@@ -53,7 +54,7 @@ func (s *Star) Update(x, y float64) {
 	}
 }
 
-func (s *Star) Pos() (int, int, int, int) {
+func (s *Star) Pos() (float64, float64, float64, float64) {
 	return s.fromx / scale, s.fromy / scale, s.tox / scale, s.toy / scale
 }
 
@@ -68,48 +69,6 @@ func abs(a int) int {
 	return a
 }
 
-func DrawLine(img *ebiten.Image, fromx, fromy, tox, toy int, color color.RGBA) {
-	steep := abs(toy - fromy) > abs(tox - fromx)
-	if steep {
-		fromy, fromx = fromx, fromy
-		toy, tox = tox, toy
-	}
-	if fromx > tox {
-		fromx, tox = tox, fromx
-		fromy, toy = toy, fromy
-	}
-	if tox == toy {
-		if toy < fromy {
-			toy, fromy = fromy, toy
-		}
-		for y := fromy; y <= toy; y++ {
-			img.Set(fromx, y, color)
-		}
-		return
-	}
-	dx := tox - fromx
-	dy := abs(toy - fromy)
-	error := dx / 2
-	var step int
-	if fromy < toy {
-		step = 1
-	} else {
-		step = -1
-	}
-	for x, y := fromx, fromy; x <= tox; x++ {
-		if steep {
-			img.Set(y, x, color)	
-		} else {
-			img.Set(x, y, color)
-		}
-		error -= dy
-		if error < 0 {
-			y += step
-			error += dx
-		}
-	}
-}
-
 func NewGame() *Game {
 	g := new(Game)
 	for i := 0; i < points; i++ {
@@ -120,6 +79,8 @@ func NewGame() *Game {
 
 func (g *Game) Update() error {
 	x, y := ebiten.CursorPosition()
+	x *= scale
+	y *= scale
 	ebiten.SetWindowTitle(strconv.Itoa(x) + ":" + strconv.Itoa(y))
 	for i := 0; i < points; i++ {
 		g.stars[i].Update(float64(x), float64(y))
@@ -131,7 +92,7 @@ func (g *Game) Draw(img *ebiten.Image) {
 	for i := 0; i < points; i++ {
 		s := &g.stars[i]
 		fx, fy, tx, ty := s.Pos()
-		DrawLine(img, fx, fy, tx, ty, color.RGBA{uint8(0xbb * s.blightness / 0xff),
+		ebitenutil.DrawLine(img, fx, fy, tx, ty, color.RGBA{uint8(0xbb * s.blightness / 0xff),
 			uint8(0xdd * s.blightness / 0xff), uint8(0xff * s.blightness / 0xff), 0xff})
 	}
 }
