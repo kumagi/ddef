@@ -1,14 +1,13 @@
-
 package main
 
 import (
-	"log"
-	"image/color"
-	"time"
-	"strconv"
-	"math/rand"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	"image/color"
+	"log"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
 const (
@@ -20,8 +19,8 @@ const (
 	frameWidth  = 32
 	frameHeight = 32
 	frameNum    = 8
-	scale = 64
-	points = 1024
+	scale       = 64
+	points      = 1024
 )
 
 type Star struct {
@@ -37,7 +36,7 @@ func (s *Star) Init() {
 }
 
 func (s *Star) Out() bool {
-	return s.fromx < 0 || screenWidth * scale < s.fromx || s.fromy < 0 || screenHeight * scale < s.fromy
+	return s.fromx < 0 || screenWidth*scale < s.fromx || s.fromy < 0 || screenHeight*scale < s.fromy
 }
 
 func (s *Star) Update(x, y float64) {
@@ -56,6 +55,12 @@ func (s *Star) Update(x, y float64) {
 
 func (s *Star) Pos() (float64, float64, float64, float64) {
 	return s.fromx / scale, s.fromy / scale, s.tox / scale, s.toy / scale
+}
+
+func (s *Star) Colors() (uint8, uint8, uint8) {
+	return uint8(0xbb * s.blightness / 0xff), // Red
+		uint8(0xdd * s.blightness / 0xff), // Green
+		uint8(0xff * s.blightness / 0xff) // Blue
 }
 
 type Game struct {
@@ -92,8 +97,8 @@ func (g *Game) Draw(img *ebiten.Image) {
 	for i := 0; i < points; i++ {
 		s := &g.stars[i]
 		fx, fy, tx, ty := s.Pos()
-		ebitenutil.DrawLine(img, fx, fy, tx, ty, color.RGBA{uint8(0xbb * s.blightness / 0xff),
-			uint8(0xdd * s.blightness / 0xff), uint8(0xff * s.blightness / 0xff), 0xff})
+		r, g, b := s.Colors()
+		ebitenutil.DrawLine(img, fx, fy, tx, ty, color.RGBA{r, g, b, 0xff})
 	}
 }
 
